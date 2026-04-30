@@ -40,13 +40,13 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
 
-      - name: Build generic debug APK
-        run: ./gradlew --no-daemon :app:assembleGenericDebug
+      - name: Build arm64 generic debug APK
+        run: ./gradlew --no-daemon :app:assembleGenericDebug -PnoSplits -PABI_FILTERS=arm64-v8a
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: myseal-custom-debug-apk
-          path: app/build/outputs/apk/generic/debug/*.apk
+          name: myseal-custom-arm64-debug-apk
+          path: app/build/outputs/apk/generic/debug/*arm64*.apk
           if-no-files-found: error
           retention-days: 14
