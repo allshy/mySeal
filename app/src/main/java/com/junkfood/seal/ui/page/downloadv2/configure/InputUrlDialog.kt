@@ -76,6 +76,7 @@ import com.junkfood.seal.ui.component.SealDialog
 import com.junkfood.seal.ui.page.downloadv2.configure.DownloadDialogViewModel.Action
 import com.junkfood.seal.ui.theme.ErrorTonalPalettes
 import com.junkfood.seal.util.findURLsFromString
+import com.junkfood.seal.util.normalizeUrlForYtdlp
 
 @Composable
 fun InputUrlPage(
@@ -257,7 +258,11 @@ private fun InputUrlPageImpl(
                 icon = Icons.AutoMirrored.Outlined.ArrowForward,
                 text = stringResource(R.string.proceed),
             ) {
-                onActionPost(Action.ProceedWithURLs(listOf(url)))
+                onActionPost(
+                    Action.ProceedWithURLs(
+                        findURLsFromString(url).ifEmpty { listOf(url.normalizeUrlForYtdlp()) }
+                    )
+                )
             }
         }
     }

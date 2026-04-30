@@ -90,7 +90,8 @@ object DownloadUtil {
     ): Result<YoutubeDLInfo> =
         YoutubeDL.runCatching {
             ToastUtil.makeToastSuspend(context.getString(R.string.fetching_playlist_info))
-            val request = YoutubeDLRequest(playlistURL)
+            val normalizedPlaylistUrl = playlistURL.normalizeUrlForYtdlp()
+            val request = YoutubeDLRequest(normalizedPlaylistUrl)
             with(request) {
                 //            addOption("--compat-options", "no-youtube-unavailable-videos")
                 addOption("--flat-playlist")
@@ -115,9 +116,10 @@ object DownloadUtil {
                     if (restrictFilenames) {
                         addOption("--restrict-filenames")
                     }
+                    applySiteRequestCompat(listOf(normalizedPlaylistUrl), userAgentString)
                 }
             }
-            execute(request, playlistURL).out.run {
+            execute(request, normalizedPlaylistUrl).out.run {
                 val playlistInfo = jsonFormat.decodeFromString<PlaylistResult>(this)
                 if (playlistInfo.type != "playlist") {
                     jsonFormat.decodeFromString<VideoInfo>(this)
@@ -144,8 +146,9 @@ object DownloadUtil {
         preferences: DownloadPreferences = DownloadPreferences.createFromPreferences(),
     ): Result<VideoInfo> {
         with(preferences) {
+            val normalizedUrl = url.normalizeUrlForYtdlp()
             val request =
-                YoutubeDLRequest(url).apply {
+                YoutubeDLRequest(normalizedUrl).apply {
                     addOption("-o", BASENAME)
                     if (restrictFilenames) {
                         addOption("--restrict-filenames")
@@ -181,6 +184,7 @@ object DownloadUtil {
                     addOption("-R", "1")
                     addOption("--no-playlist")
                     addOption("--socket-timeout", "5")
+                    applySiteRequestCompat(listOf(normalizedUrl), userAgentString)
                 }
             return getVideoInfo(request, taskKey)
         }
@@ -676,7 +680,7 @@ object DownloadUtil {
                         ?: return Result.failure(
                             Throwable(context.getString(R.string.fetch_info_error_msg))
                         )
-                }
+                }.normalizeUrlForYtdlp()
             val request = YoutubeDLRequest(url)
             val pathBuilder = StringBuilder()
             val outputBuilder = StringBuilder()
@@ -700,6 +704,7 @@ object DownloadUtil {
                     if (debug) {
                         addOption("-v")
                     }
+                    applySiteRequestCompat(listOf(url), userAgentString)
                     if (useDownloadArchive) {
                         val archiveFile = context.getArchiveFile()
                         val archiveFileContent = archiveFile.readText()
@@ -880,7 +885,7 @@ object DownloadUtil {
         preferences: DownloadPreferences,
         progressCallback: ((Float, Long, String) -> Unit),
     ): Result<YoutubeDLResponse> {
-        val urlList = urlString.split(Regex("[\n ]")).filter { it.isNotBlank() }
+        val urlList = urlString.split(Regex("[\n ]")).normalizeUrlsForYtdlp()
 
         val request =
             with(preferences) {
@@ -904,6 +909,7 @@ object DownloadUtil {
                     if (cookies) {
                         enableCookies(userAgentString)
                     }
+                    applySiteRequestCompat(urlList, userAgentString)
                 }
             }
 
@@ -921,7 +927,7 @@ object DownloadUtil {
         downloadPreferences.run {
             val taskId = Downloader.makeKey(url = url, templateName = template.name)
             val notificationId = taskId.toNotificationId()
-            val urlList = url.split(Regex("[\n ]")).filter { it.isNotBlank() }
+            val urlList = url.split(Regex("[\n ]")).normalizeUrlsForYtdlp()
 
             ToastUtil.makeToastSuspend(context.getString(R.string.start_execute))
             val request =
@@ -945,6 +951,7 @@ object DownloadUtil {
                     if (cookies) {
                         enableCookies(userAgentString)
                     }
+                    applySiteRequestCompat(urlList, userAgentString)
                 }
 
             onProcessStarted()

@@ -8,6 +8,8 @@ import com.junkfood.seal.download.Task
 import com.junkfood.seal.util.DownloadUtil
 import com.junkfood.seal.util.PlaylistResult
 import com.junkfood.seal.util.VideoInfo
+import com.junkfood.seal.util.normalizeUrlForYtdlp
+import com.junkfood.seal.util.normalizeUrlsForYtdlp
 import com.yausername.youtubedl_android.YoutubeDL
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -109,11 +111,12 @@ class DownloadDialogViewModel(private val downloader: DownloaderV2) : ViewModel(
     }
 
     private fun proceedWithUrls(action: Action.ProceedWithURLs) {
-        mSheetStateFlow.update { SheetState.Configure(action.urlList) }
+        mSheetStateFlow.update { SheetState.Configure(action.urlList.normalizeUrlsForYtdlp()) }
     }
 
     private fun fetchPlaylist(action: Action.FetchPlaylist) {
-        val (url, preferences) = action
+        val (rawUrl, preferences) = action
+        val url = rawUrl.normalizeUrlForYtdlp()
 
         val job =
             viewModelScope.launch(Dispatchers.IO) {
@@ -147,7 +150,8 @@ class DownloadDialogViewModel(private val downloader: DownloaderV2) : ViewModel(
     }
 
     private fun fetchFormat(action: Action.FetchFormats) {
-        val (url, audioOnly, preferences) = action
+        val (rawUrl, audioOnly, preferences) = action
+        val url = rawUrl.normalizeUrlForYtdlp()
 
         val job =
             viewModelScope.launch(Dispatchers.IO) {
@@ -178,7 +182,9 @@ class DownloadDialogViewModel(private val downloader: DownloaderV2) : ViewModel(
         urlList: List<String>,
         preferences: DownloadUtil.DownloadPreferences,
     ) {
-        urlList.forEach { downloader.enqueue(Task(url = it, preferences = preferences)) }
+        urlList
+            .normalizeUrlsForYtdlp()
+            .forEach { downloader.enqueue(Task(url = it, preferences = preferences)) }
         hideDialog()
     }
 
@@ -189,7 +195,7 @@ class DownloadDialogViewModel(private val downloader: DownloaderV2) : ViewModel(
     ) {
         val task =
             Task(
-                url = url,
+                url = url.normalizeUrlForYtdlp(),
                 type = Task.TypeInfo.CustomCommand(template = template),
                 preferences = preferences,
             )
@@ -210,7 +216,7 @@ class DownloadDialogViewModel(private val downloader: DownloaderV2) : ViewModel(
     private fun showDialog(action: Action.ShowSheet) {
         val urlList = action.urlList
         if (!urlList.isNullOrEmpty()) {
-            mSheetStateFlow.update { SheetState.Configure(urlList) }
+            mSheetStateFlow.update { SheetState.Configure(urlList.normalizeUrlsForYtdlp()) }
         } else {
             mSheetStateFlow.update { SheetState.InputUrl }
         }

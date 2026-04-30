@@ -129,7 +129,7 @@ fun findURLsFromString(input: String, firstMatchOnly: Boolean = false): List<Str
             if (find()) result += (group())
         }
     }
-    return result
+    return result.normalizeUrlsForYtdlp()
 }
 
 fun connectWithDelimiter(vararg strings: String?, delimiter: String): String =
